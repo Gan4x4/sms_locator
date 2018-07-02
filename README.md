@@ -1,6 +1,6 @@
 # sms_locator
-It's simple application allow you to find location of phone by SMS.
-Than useful for determine location of children.
+It's simple application allow you to find precise location of phone by SMS.
+Useful for determine location of children.
 
 It has some benefits:
 
@@ -9,8 +9,8 @@ It has some benefits:
 - Work on devices with Android 6+
 - Work on devices from Mui, Huaway and e.t.c that have "protected app list"
 - Use link to Google maps in modern 2017 format
-- Free,
-- There are no ads in it
+- Free and Opensource,
+- There are no ADS in it
 
 And some constrain:
 - Need device with GPS

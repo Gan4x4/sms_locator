@@ -16,10 +16,17 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends Activity {
 
@@ -27,9 +34,9 @@ public class MainActivity extends Activity {
     final String[] PERMISSIONS_LIST = {Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.RECEIVE_SMS,
             Manifest.permission.SEND_SMS};
-    final static String PASSPHRASE_KEY = "passphrase";
-    final static String PREFERENCES_KEY = "SMSLocator_SP";
     final static String PHONE_KEY = "phone";
+
+    private static final int ACCESSIBILITY_ENABLED = 1;
 
     private static final Intent[] AUTO_START_INTENTS = {
             new Intent().setComponent(new ComponentName("com.samsung.android.lool",
@@ -50,20 +57,100 @@ public class MainActivity extends Activity {
 
     String phone;
     TextView tePassphrase;
+    //SharedPreferences preferences = null;
+    Storage storage;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //preferences = this.getSharedPreferences(PREFERENCES_KEY, 0);
+        storage = Storage.getInstance(this);
+
+        storePhoneFromIntent();
+        initPassphraseEdit();
+        initButtons();
+        checkForProtectedList();
+        checkAccessibilitySettings();
+    }
+
+    private void initButtons(){
+        Button clickButton = findViewById(R.id.save_button);
+        final Activity activity = this;
+        clickButton.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Passphrase saving automatically in onPause method
+                activity.finish();
+            }
+        });
+    }
+
+
+    /*
+     Trick for Mi and Huaway devices
+     https://stackoverflow.com/questions/41524459/broadcast-receiver-not-working-after-device-reboot-in-android/41627296
+    */
+    protected void checkAccessibilitySettings(){
+        if (! isAccessibilitySettingsOn()){
+            final Activity activity = this;
+            AlertDialog.Builder dialog = new AlertDialog.Builder(activity);
+            dialog.setTitle(R.string.accessibility_list_title);
+            dialog.setMessage(activity.getResources().getString(R.string.accessibility_list_explanation));
+            dialog.setPositiveButton(activity.getResources().getString(R.string.open_accessibility_settings), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    // Open ACCESSIBILITY list
+                    startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    paramDialogInterface.cancel();
+                }
+            });
+            dialog.setNegativeButton(activity.getResources().getString(R.string.skip_accessibility_settings), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    paramDialogInterface.cancel();
+                }
+            });
+            dialog.show();
+        }
+    }
+
+
+    /*
+    * Used only on some devices made by Huaway and etc
+    */
+
+    protected void checkForProtectedList(){
+        if (! storage.isFirstStart()){
+            // Open dialog only once
+            return;
+        }
+
         for (Intent intent : AUTO_START_INTENTS){
             if (getPackageManager().resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null) {
-                startActivity(intent);
+                //startActivity(intent);
+                openProtectedList(intent);
                 break;
             }
         }
-        storePhoneFromIntent();
-        initPassphraseEdit();
+    }
+
+
+    protected void openProtectedList(final Intent intent){
+        final Activity activity = this;
+        AlertDialog.Builder dialog = new AlertDialog.Builder(activity);
+        dialog.setTitle(R.string.protected_list_title);
+        dialog.setMessage(activity.getResources().getString(R.string.protected_list_explanation));
+        dialog.setPositiveButton(activity.getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // Open protected list
+                activity.startActivity(intent);
+                paramDialogInterface.cancel();
+            }
+        });
+        dialog.show();
     }
 
     /*
@@ -78,7 +165,7 @@ public class MainActivity extends Activity {
 
     private void initPassphraseEdit(){
         tePassphrase = findViewById(R.id.te_passphrase);
-        tePassphrase.setText(getCurrentPassphrase(this));
+        tePassphrase.setText(storage.getCurrentPassphrase());
     }
 
 
@@ -92,25 +179,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onPause(){
-        savePassphrase();
+        storage.savePassphrase(getPassphraseFromInput());
         super.onPause();
     }
 
-    private void savePassphrase(){
-        SharedPreferences preferences = getApplicationContext().getSharedPreferences(PREFERENCES_KEY, 0);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putString(PASSPHRASE_KEY, getPassphraseFromInput());
-        editor.commit();
-    }
-
-
-    /*
-    This method was static because it can be called from BroadcastReceiver
-     */
-    public static String getCurrentPassphrase(Context context){
-        SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_KEY, 0);
-        return prefs.getString(PASSPHRASE_KEY,context.getString(R.string.default_passphrase));
-    }
 
     private String getPassphraseFromInput(){
         String userInput = tePassphrase.getText().toString().toLowerCase().trim();
@@ -246,6 +318,42 @@ public class MainActivity extends Activity {
                             PackageManager.COMPONENT_ENABLED_STATE_ENABLED ,
                             PackageManager.DONT_KILL_APP);
         }
+    }
+
+
+
+
+
+    public boolean isAccessibilitySettingsOn() {
+        Context context = this;
+        int accessibilityEnabled = 0;
+        final String service = context.getPackageName() + "/" + FakeAccessibilityService.class.getCanonicalName();
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(
+                    context.getApplicationContext().getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException e) {
+            Log.d("SMSListener", "Error finding setting, default accessibility to not found: "+ e.getMessage());
+        }
+        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
+
+        if (accessibilityEnabled == ACCESSIBILITY_ENABLED) {
+            String settingValue = Settings.Secure.getString(
+                    context.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                mStringColonSplitter.setString(settingValue);
+                while (mStringColonSplitter.hasNext()) {
+                    String accessibilityService = mStringColonSplitter.next();
+
+                    if (accessibilityService.equalsIgnoreCase(service)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
 }

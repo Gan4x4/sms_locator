@@ -14,27 +14,32 @@ import android.telephony.SmsMessage;
 import android.util.Log;
 
 public class SmsListener extends BroadcastReceiver {
-    final static double minimalAccuracy = 50.0;
+    final static double minimalAccuracy = 75.0;
 
     Location location = null;
     int attempt = 0;
     String phone = null;
     Context context = null;
+    Storage storage = null ;
+    boolean sendWelcomeSms = false;
 
     @Override
     public void onReceive(Context context, Intent intent) {
         this.context = context;
+        storage = Storage.getInstance(context);
         /*
             New SMS
          */
         if(intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")){
             SmsMessage[] messages = extractSmsFromIntent(intent);
-            String passphrase = MainActivity.getCurrentPassphrase(context);
             for(SmsMessage m : messages){
-                if (m.getMessageBody().toLowerCase().trim().equals(passphrase.toLowerCase())){
-                    this.phone = m.getOriginatingAddress();
-                    sendSMS("SMSLocator start");
-                    tryGetLocation();
+                if (parseMessage(m)){
+                    if (storage.hasRequestFromPhone(phone)){
+                        sendSMS(context.getString(R.string.already_processed));
+                    }else {
+                        sendWelcomeSms();
+                        tryGetLocation();
+                    }
                 }
             }
         }
@@ -54,10 +59,14 @@ public class SmsListener extends BroadcastReceiver {
         */
         if (intent.getAction().equals("com.gan4x4.LOCATION_UPDATE")){
             readIntentExtras(intent);
-            if (location != null && phone != null) {
+            if (location != null && ! storage.getCurrentRequests().isEmpty()) {
                 if (location.hasAccuracy() && location.getAccuracy() < minimalAccuracy) {
                     //Log.d("SMSListener", "Location updated " + location.getLatitude() + " " + location.getLongitude());
-                    sendSMS(composeSmsText(location));
+                    for (String s : storage.getCurrentRequests()) {
+                        phone = s;
+                        sendSMS(composeSmsText(location));
+                    }
+                    storage.clearRequests();
                 }
                 else{
                     Log.d("SMSListener", "Location updated but accuracy is bad:" + location.getAccuracy());
@@ -69,6 +78,59 @@ public class SmsListener extends BroadcastReceiver {
 
         }
 
+        if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")){
+            if (! storage.getCurrentRequests().isEmpty()){
+                tryGetLocation();
+            }
+        }
+    }
+
+    private boolean parseMessage(SmsMessage sms){
+        String clearMessage = sms.getMessageBody().toLowerCase().trim();
+        String[] parts = clearMessage.split(":");
+        String passphrase = storage.getCurrentPassphrase();
+        if (parts.length == 0){
+            return false;
+        }
+
+        String messagePassphrase = parts[0];
+        if (! passphrase.toLowerCase().equals(messagePassphrase)){
+            return false;
+        }
+
+        this.phone = sms.getOriginatingAddress();
+
+        // Parse params
+
+        for(int i=1;i<parts.length;i++){
+
+            if (parts[i].toLowerCase().equals("reset")){
+                storage.removeRequest(phone);
+                sendSMS("Request canceled");
+                continue;
+            }
+
+            if (parts[i].toLowerCase().equals("welcome")){
+                sendWelcomeSms = true;
+                continue;
+            }
+        }
+
+        return true;
+    }
+
+
+    private void sendWelcomeSms(){
+        if (! sendWelcomeSms){
+            return;
+        }
+        String smsText = context.getString(R.string.sms_welcome1);
+        Location approxLocation = tryGetLastKnownLocation();
+        if (approxLocation != null) {
+            smsText += context.getString(R.string.sms_welcome2)+composeSmsText(approxLocation)+context.getString(R.string.sms_welcome3);
+        }
+        sendSMS(smsText);
+        sendWelcomeSms = false;
     }
 
     private void readIntentExtras(Intent intent){
@@ -97,12 +159,23 @@ public class SmsListener extends BroadcastReceiver {
         return msgs;
     }
 
-
     public void tryGetLocation(){
         try {
             sendLocationRequest();
+            if (phone != null) {
+                storage.addRequest(phone);
+            }
         } catch ( SecurityException e ) {
             openActivityToRequestPermission();
+        }
+    }
+
+    public Location tryGetLastKnownLocation(){
+        try {
+            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            return locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        } catch ( SecurityException e ) {
+            return null;
         }
     }
 

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SMSLocator</string>
+    <string name="app_name">Simple SMS Locator</string>
     <string name="gps_network_not_enabled">GPS disabled</string>
     <string name="open_location_settings">Settings</string>
     <string name="exit_application">Exit</string>
@@ -7,6 +7,26 @@
 
     <string name="description">This application allow you to share location of this device via SMS. To request location send to this phone SMS with passphrase: </string>
     <string name="default_passphrase">location</string>
+
+    <string name="protected_list_title">Check protected list.</string>
+    <string name="protected_list_explanation">To use this application you must check that it can operate in sleep mode.</string>
+
+    <string name="accessibility_list_title">Enable accessibility service.</string>
+    <string name="accessibility_list_explanation">To work properly on devices from some manufacturer like Huawei, Mi and etc.
+        Application must be registered as accessibility service. If you have device frome on of sach brand,
+        or app didn't work after reboot, you mast enable Simple SMS Locator accessibility service. </string>
+    <string name="open_accessibility_settings">To services</string>
+    <string name="skip_accessibility_settings">Skip</string>
+    <string name="accessibility_service_description">
+        On some devices form Huawei, OnePlus, Mi and etc OS prevent apps from starting up their services automatically on boot complete. To avoid it bug we need registered and enable accessibility service.
+        \n Full explanation of this trick can be found here: https://stackoverflow.com/questions/41524459/broadcast-receiver-not-working-after-device-reboot-in-android/41627296
+    </string>
+
+    <string name="already_processed">Request already processed</string>
+    <string name="sms_welcome1">SMSLocator start.</string>
+    <string name="sms_welcome2">Last known loc. is</string>
+    <string name="sms_welcome3">fine location will be send to you later.</string>
+    <string name="save">Save</string>
 
 
 </resources>

@@ -23,3 +23,6 @@ How it works:
 On first run, you setup pass-phrase. After you can sent SMS to this phone from another with this pass-phrase. In response you receive two sms link to Google maps, pointed to location of phone:
 - First with last-known may by coarse location of a phone;
 - Second with fine location determined by GPS
+
+Link to Play market:
+https://play.google.com/store/apps/details?id=com.gan4x4.smslocator

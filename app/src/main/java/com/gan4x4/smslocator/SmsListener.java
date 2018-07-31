@@ -21,7 +21,7 @@ public class SmsListener extends BroadcastReceiver {
     String phone = null;
     Context context = null;
     Storage storage = null ;
-    boolean sendWelcomeSms = false;
+    boolean coarse = false;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -34,12 +34,15 @@ public class SmsListener extends BroadcastReceiver {
             SmsMessage[] messages = extractSmsFromIntent(intent);
             for(SmsMessage m : messages){
                 if (parseMessage(m)){
-                    if (storage.hasRequestFromPhone(phone)){
+                    if (storage.hasRequestFromPhone(phone) && hasActivePendingIntent()){
                         sendSMS(context.getString(R.string.already_processed));
                     }else {
-                        sendWelcomeSms();
-                        tryGetLocation();
+                        sendApproxLocationSms();
+                        if (! coarse || sendApproxLocationSms() == null) {
+                            tryGetFineLocation();
+                        }
                     }
+                    coarse = false;
                 }
             }
         }
@@ -50,7 +53,7 @@ public class SmsListener extends BroadcastReceiver {
         if(intent.getAction().equals("com.gan4x4.SEND_LOCATION")){
             readIntentExtras(intent); // Contain only phone
             if (phone != null && ! phone.isEmpty()){
-                tryGetLocation();
+                tryGetFineLocation();
             }
         }
 
@@ -70,7 +73,7 @@ public class SmsListener extends BroadcastReceiver {
                 }
                 else{
                     Log.d("SMSListener", "Location updated but accuracy is bad:" + location.getAccuracy());
-                    tryGetLocation();
+                    tryGetFineLocation();
                 }
             }else {
                 Log.d("SMSListener", "Location updated but empty");
@@ -80,9 +83,17 @@ public class SmsListener extends BroadcastReceiver {
 
         if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")){
             if (! storage.getCurrentRequests().isEmpty()){
-                tryGetLocation();
+                tryGetFineLocation();
             }
         }
+    }
+
+
+    private boolean hasActivePendingIntent(){
+        // https://stackoverflow.com/questions/4556670/how-to-check-if-alarmmanager-already-has-an-alarm-set
+        return PendingIntent.getBroadcast(context, 0,
+                new Intent("com.gan4x4.LOCATION_UPDATE"),
+                PendingIntent.FLAG_NO_CREATE) != null;
     }
 
     private boolean parseMessage(SmsMessage sms){
@@ -110,8 +121,8 @@ public class SmsListener extends BroadcastReceiver {
                 continue;
             }
 
-            if (parts[i].toLowerCase().equals("welcome")){
-                sendWelcomeSms = true;
+            if (parts[i].toLowerCase().equals("coarse")){
+                coarse = true;
                 continue;
             }
         }
@@ -120,17 +131,16 @@ public class SmsListener extends BroadcastReceiver {
     }
 
 
-    private void sendWelcomeSms(){
-        if (! sendWelcomeSms){
-            return;
-        }
-        String smsText = context.getString(R.string.sms_welcome1);
+    private Location sendApproxLocationSms(){
+        String smsText;
         Location approxLocation = tryGetLastKnownLocation();
         if (approxLocation != null) {
-            smsText += context.getString(R.string.sms_welcome2)+composeSmsText(approxLocation)+context.getString(R.string.sms_welcome3);
+            smsText = context.getString(R.string.sms_last_known)+" "+composeSmsText(approxLocation);
+        }else{
+            smsText = context.getString(R.string.sms_welcome);
         }
         sendSMS(smsText);
-        sendWelcomeSms = false;
+        return approxLocation;
     }
 
     private void readIntentExtras(Intent intent){
@@ -159,9 +169,11 @@ public class SmsListener extends BroadcastReceiver {
         return msgs;
     }
 
-    public void tryGetLocation(){
+    public void tryGetFineLocation(){
         try {
-            sendLocationRequest();
+            if (! hasActivePendingIntent()){
+                sendLocationRequest();
+            }
             if (phone != null) {
                 storage.addRequest(phone);
             }

@@ -1,4 +1,4 @@
-# sms_locator
+# Simple SMS locator
 It's simple application allow you to find precise location of phone by SMS.
 Useful for determine location of children.
 

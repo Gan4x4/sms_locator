@@ -27,6 +27,7 @@
     <string name="sms_last_known">Last known location is: </string>
 
     <string name="save">Save</string>
+    <string name="sms_no_requests">No requests</string>
 
 
 </resources>

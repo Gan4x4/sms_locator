@@ -30,13 +30,27 @@
         <receiver android:name="SmsListener"
             android:enabled="true"
             android:exported="true" >
+<!-- https://stackoverflow.com/questions/41524459/broadcast-receiver-not-working-after-device-reboot-in-android#41562672 -->
             <intent-filter android:priority="1000">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <intent-filter android:priority="1000">
                 <action android:name="com.gan4x4.LOCATION_SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <intent-filter android:priority="1000">
                 <action android:name="com.gan4x4.LOCATION_UPDATE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
         </receiver>
 
 

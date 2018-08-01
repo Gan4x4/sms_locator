@@ -82,6 +82,7 @@ public class SmsListener extends BroadcastReceiver {
         }
 
         if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")){
+            Log.d("SMSListener", "Start after boot");
             if (! storage.getCurrentRequests().isEmpty()){
                 tryGetFineLocation();
             }
@@ -125,10 +126,29 @@ public class SmsListener extends BroadcastReceiver {
                 coarse = true;
                 continue;
             }
+
+            if (parts[i].toLowerCase().equals("requests")){
+                sendListOfCurrentrRequests();
+                // Only send list of phones waiting for location
+                return false;
+            }
         }
 
         return true;
     }
+
+    private void sendListOfCurrentrRequests(){
+        String text = "";
+        if (storage.getCurrentRequests().isEmpty()){
+            text = context.getString(R.string.sms_no_requests);
+        }else{
+            for(String ph : storage.getCurrentRequests()){
+                text += ph + "\n";
+            }
+        }
+        sendSMS("Current requests: \n" + text);
+    }
+
 
 
     private Location sendApproxLocationSms(){

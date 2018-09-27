@@ -34,14 +34,16 @@ public class SmsListener extends BroadcastReceiver {
             SmsMessage[] messages = extractSmsFromIntent(intent);
             for(SmsMessage m : messages){
                 if (parseMessage(m)){
-                    if (storage.hasRequestFromPhone(phone) && hasActivePendingIntent()){
+
+                    if (storage.hasRequestFromPhone(phone) && getActivePendingIntent() != null) {
                         sendSMS(context.getString(R.string.already_processed));
-                    }else {
-                        sendApproxLocationSms();
-                        if (! coarse || sendApproxLocationSms() == null) {
-                            tryGetFineLocation();
-                        }
                     }
+
+                    Location approxLocation = sendApproxLocationSms();
+                    if (! coarse || approxLocation == null) {
+                            tryGetFineLocation();
+                    }
+
                     coarse = false;
                 }
             }
@@ -90,11 +92,11 @@ public class SmsListener extends BroadcastReceiver {
     }
 
 
-    private boolean hasActivePendingIntent(){
+    private PendingIntent getActivePendingIntent(){
         // https://stackoverflow.com/questions/4556670/how-to-check-if-alarmmanager-already-has-an-alarm-set
         return PendingIntent.getBroadcast(context, 0,
                 new Intent("com.gan4x4.LOCATION_UPDATE"),
-                PendingIntent.FLAG_NO_CREATE) != null;
+                PendingIntent.FLAG_NO_CREATE);
     }
 
     private boolean parseMessage(SmsMessage sms){
@@ -191,14 +193,20 @@ public class SmsListener extends BroadcastReceiver {
 
     public void tryGetFineLocation(){
         try {
-            if (! hasActivePendingIntent()){
-                sendLocationRequest();
-            }
+            cancelOldPendingIntent();
+            sendLocationRequest();
             if (phone != null) {
                 storage.addRequest(phone);
             }
         } catch ( SecurityException e ) {
             openActivityToRequestPermission();
+        }
+    }
+
+    private void cancelOldPendingIntent(){
+        PendingIntent currentRequest = getActivePendingIntent();
+        if (currentRequest != null){
+            currentRequest.cancel();
         }
     }
 

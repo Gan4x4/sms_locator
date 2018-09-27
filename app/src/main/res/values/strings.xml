@@ -22,7 +22,7 @@
         \n Full explanation of this trick can be found here: https://stackoverflow.com/questions/41524459/broadcast-receiver-not-working-after-device-reboot-in-android/41627296
     </string>
 
-    <string name="already_processed">Request already processed</string>
+    <string name="already_processed">Request already processed but will be updated</string>
     <string name="sms_welcome">Last known location is undefined. Fine location will be send to you later.</string>
     <string name="sms_last_known">Last known location is: </string>
 

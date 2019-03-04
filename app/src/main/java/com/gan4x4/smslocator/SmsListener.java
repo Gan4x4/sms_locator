@@ -13,6 +13,10 @@ import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 public class SmsListener extends BroadcastReceiver {
     final static double minimalAccuracy = 75.0;
 
@@ -27,10 +31,11 @@ public class SmsListener extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         this.context = context;
         storage = Storage.getInstance(context);
+        String action = intent.getAction();
         /*
             New SMS
          */
-        if(intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")){
+        if(action.equals("android.provider.Telephony.SMS_RECEIVED")){
             SmsMessage[] messages = extractSmsFromIntent(intent);
             for(SmsMessage m : messages){
                 if (parseMessage(m)){
@@ -41,9 +46,12 @@ public class SmsListener extends BroadcastReceiver {
 
                     Location approxLocation = sendApproxLocationSms();
                     if (! coarse || approxLocation == null) {
-                            tryGetFineLocation();
-                    }
 
+                        if (! MainActivity.isGpsEnabled(context)){
+                            sendSMS(context.getString(R.string.gps_network_not_enabled));
+                        }
+                        tryGetFineLocation();
+                    }
                     coarse = false;
                 }
             }
@@ -72,10 +80,14 @@ public class SmsListener extends BroadcastReceiver {
                         sendSMS(composeSmsText(location));
                     }
                     storage.clearRequests();
+                    stopService();
                 }
                 else{
                     Log.d("SMSListener", "Location updated but accuracy is bad:" + location.getAccuracy());
-                    tryGetFineLocation();
+                    if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        // In Android 8+ location periodically determining in foreground service
+                        tryGetFineLocation();
+                    }
                 }
             }else {
                 Log.d("SMSListener", "Location updated but empty");
@@ -220,13 +232,20 @@ public class SmsListener extends BroadcastReceiver {
     }
 
     private void sendLocationRequest() throws SecurityException {
-        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        Intent intentp = new Intent("com.gan4x4.LOCATION_UPDATE");
-        intentp.putExtra("phone",phone);
-        intentp.putExtra("attempt",attempt++);
-        intentp.putExtra("satellites",7);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intentp,PendingIntent.FLAG_UPDATE_CURRENT);
-        locationManager.requestSingleUpdate (LocationManager.GPS_PROVIDER,pendingIntent);
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            Intent i = new Intent(context, ForegroundServiceForAndroid8.class);
+            i.putExtra("phone", phone);
+            context.startService(i);
+        }else {
+            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            Intent intentp = new Intent("com.gan4x4.LOCATION_UPDATE");
+            intentp.putExtra("phone", phone);
+            intentp.putExtra("attempt", attempt++);
+            intentp.putExtra("satellites", 7);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intentp, PendingIntent.FLAG_UPDATE_CURRENT);
+            locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, pendingIntent);
+        }
     }
 
     private void openActivityToRequestPermission(){
@@ -251,15 +270,37 @@ public class SmsListener extends BroadcastReceiver {
         //url += "\n "+"yandexmaps://maps.yandex.ru/?pt="+loc.getLatitude()+","+loc.getLongitude();
         //url += "\n "+"http://maps.google.com/?ll="+loc.getLatitude()+","+loc.getLongitude();
         //url = "intent://geo:"+loc.getLatitude()+","+loc.getLongitude()+"?q="+loc.getLatitude()+","+loc.getLongitude();
-        return url+"\n accuracy:"+accuracy+"\n attempt: "+attempt;
+        //return url+"\n accuracy:"+accuracy+"\n attempt: "+attempt;
+        return url+"\n accuracy:"+accuracy+" tm: "+getTime(loc);
     }
 
     public int getZoom(Float accuracy){
         return 20;
     }
 
+    public String getTime(Location loc){
+        Calendar calendar = new GregorianCalendar();
+        calendar.setTimeInMillis(loc.getTime());
+
+        SimpleDateFormat format = new SimpleDateFormat("hh:mm");
+        return format.format(calendar.getTime());
+
+
+        //return calendar.get(Calendar.DAY_OF_MONTH)+" "+calendar.get(Calendar.HOUR)+calendar.get(Calendar.MINUTE);
+
+    }
+
     public void sendSMS(String text){
         SmsManager sms = SmsManager.getDefault();
         sms.sendTextMessage(phone, null, text, null, null);
+    }
+
+    public void stopService(){
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            Intent i = new Intent(context, ForegroundServiceForAndroid8.class);
+            context.stopService(i);
+        }
+
+
     }
 }

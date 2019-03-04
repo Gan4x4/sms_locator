@@ -33,7 +33,10 @@ public class MainActivity extends Activity {
     final static int MY_PERMISSIONS_REQUEST = 3;
     final String[] PERMISSIONS_LIST = {Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.SEND_SMS};
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.RECEIVE_BOOT_COMPLETED
+
+    };
     final static String PHONE_KEY = "phone";
 
     private static final int ACCESSIBILITY_ENABLED = 1;
@@ -264,16 +267,19 @@ public class MainActivity extends Activity {
         }
     }
 
+    public static boolean isGpsEnabled(Context context){
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        try {
+            return lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {
+            return false;
+        }
+    }
+
     public void checkGPS(){
         final Activity activity = this;
-        LocationManager lm = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        boolean gps_enabled = false;
 
-        try {
-            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception ex) {}
-
-        if(!gps_enabled ) {
+        if(! isGpsEnabled(activity) ) {
             // notify user
 
             AlertDialog.Builder dialog = new AlertDialog.Builder(activity);

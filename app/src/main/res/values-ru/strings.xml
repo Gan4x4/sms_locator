@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">Simple SMS Locator</string>
+
+    <string name="open_location_settings">Настройки</string>
+    <string name="exit_application">Выход</string>
+    <string name="enabling_gps_explanation">Для использования приложения включите GPS в системных настройках</string>
+
+    <string name="description">Приложение позволяет определить местоположение устройства и получить его в  SMS. Для получения местоположения отправьте на этот телефон SMS с текстом: </string>
+    <string name="default_passphrase">location</string>
+
+    <string name="protected_list_title">Проверить список "защищённых" приложений.</string>
+    <string name="protected_list_explanation">Для работы приложение должно получить разрешение на работу в то время когда телефон находится в спящем режиме.</string>
+
+    <string name="accessibility_list_title">Включить accessibility service.</string>
+    <string name="accessibility_list_explanation">Для корректной работы на устройствах ряда производителей, таких как Huawei, Mi и еще некоторых.
+        Приложение должно быть зарегистрировано как "accessibility service".Если приложение не запускается после перезагрузки, включите
+        "Simple SMS Locator accessibility service". </string>
+    <string name="open_accessibility_settings">К службам</string>
+    <string name="skip_accessibility_settings">Пропустиь</string>
+    <string name="accessibility_service_description">
+        На некоторых устройствах от Huawei, OnePlus, Mi и др. ОС препятствует запуску приложений после перезагрузки устройства.
+        Что бы устранить эту ошибку, приложение должно быть включено как accessibility service.
+        \n Детальное объяснение проблемы: https://stackoverflow.com/questions/41524459/broadcast-receiver-not-working-after-device-reboot-in-android/41627296
+    </string>
+
+    <string name="save">Сохранить</string>
+    <!-- SMS mesages. not translated to decrease number of messages
+
+    <string name="already_processed">Запрос уже обрабатывается и будет обновлен.</string>
+    <string name="sms_welcome">Примерное местоположение не известно. Точное местоположение будет отправлено позже.</string>
+    <string name="sms_last_known">Примерное местоположение: </string>
+    <string name="gps_network_not_enabled">GPS отключен</string>
+
+    <string name="sms_no_requests">Нет запросов</string>
+
+    -->
+
+    <string name="foreground_start">Определение местоположения</string>
+    <string name="by_request">По запросу с тел. номера: </string>
+
+</resources>

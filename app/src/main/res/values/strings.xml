@@ -13,8 +13,8 @@
 
     <string name="accessibility_list_title">Enable accessibility service.</string>
     <string name="accessibility_list_explanation">To work properly on devices from some manufacturer like Huawei, Mi and etc.
-        Application must be registered as accessibility service. If you have device frome on of sach brand,
-        or app didn't work after reboot, you mast enable Simple SMS Locator accessibility service. </string>
+        Application must be registered as accessibility service. If you have device from on of such brand,
+        or app didn\'t work after reboot, you mast enable Simple SMS Locator accessibility service. </string>
     <string name="open_accessibility_settings">To services</string>
     <string name="skip_accessibility_settings">Skip</string>
     <string name="accessibility_service_description">
@@ -29,5 +29,7 @@
     <string name="save">Save</string>
     <string name="sms_no_requests">No requests</string>
 
+    <string name="foreground_start">Initiated positioning</string>
+    <string name="by_request">By request from phone: </string>
 
 </resources>

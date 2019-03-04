@@ -26,3 +26,6 @@ On first run, you setup pass-phrase. After you can sent SMS to this phone from a
 
 Link to Play market:
 https://play.google.com/store/apps/details?id=com.gan4x4.smslocator
+
+Link to direct apk download:
+https://github.com/Gan4x4/sms_locator/raw/master/app/release/app-release.apk
